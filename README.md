@@ -1,5 +1,20 @@
 # Zombie-Defense---Classroom-Madness
 
+
+## Automatizované testy
+
+Projekt obsahuje test runner `pytest` a testy ve složce `tests/`.
+
+### Spuštění testů lokálně
+1. (Doporučeno) vytvoř si virtuální prostředí:
+   - `python -m venv .venv`
+   - Linux/macOS: `source .venv/bin/activate`
+   - Windows: `.venv\Scripts\activate`
+2. Nainstaluj závislosti pro testování:
+   - `python -m pip install pytest pygame`
+3. Spusť testy z kořene repozitáře:
+   - `python -m pytest`
+
 ## Organizace práce v týmu
 
 ### Tabulka odpovědností členů týmu
