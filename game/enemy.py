@@ -1,8 +1,12 @@
+"""Enemy entities (zombies) and spawn helpers."""
+
 import random
 import pygame
 
 
 class Zombie:
+    """Simple zombie that follows the player."""
+
     def __init__(self, x: float, y: float, speed: float = 90, radius: int = 16):
         self.position = pygame.Vector2(x, y)
         self.speed = speed
@@ -12,6 +16,7 @@ class Zombie:
 
     @staticmethod
     def spawn_at_screen_edge(world_rect: pygame.Rect) -> "Zombie":
+        """Spawn a zombie slightly outside one random edge of the world."""
         side = random.choice(["top", "bottom", "left", "right"])
         if side == "top":
             x = random.uniform(world_rect.left, world_rect.right)
@@ -30,10 +35,12 @@ class Zombie:
         return Zombie(x, y, speed=speed)
 
     def update(self, dt: float, player_position: pygame.Vector2):
+        """Move zombie towards player position."""
         direction = player_position - self.position
         if direction.length_squared() > 0:
             direction = direction.normalize()
         self.position += direction * self.speed * dt
 
     def draw(self, screen: pygame.Surface):
+        """Render zombie body."""
         pygame.draw.circle(screen, self.color, self.position, self.radius)

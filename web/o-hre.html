@@ -23,38 +23,38 @@
 
   <main>
     <section class="hero">
-      <h1>O hře</h1>
-      <p>Souhrn pravidel, funkčních i technických požadavků projektu Zombie Defense: Classroom Madness.</p>
+      <h1>O hře (top-down zombie shooter)</h1>
+      <p>Hráč vidí mapu shora (bird view), pohybuje se po učebně, střílí zombie a snaží se přežít co nejdéle.</p>
     </section>
 
     <section class="grid">
       <article class="section">
         <h2>Pravidla hry</h2>
         <ul>
-          <li>Hráč brání učebnu před postupujícími vlnami zombíků.</li>
-          <li>Za poražené nepřátele získává body a suroviny na stavbu obrany.</li>
-          <li>Pokud zombie proniknou do učebny, hráč ztrácí životy základny.</li>
-          <li>Cílem je přežít co nejvíce vln bez pádu základny.</li>
+          <li>WASD/šipky = pohyb hráče.</li>
+          <li>Levé tlačítko myši nebo mezerník = střelba.</li>
+          <li>Zombie se spawnují na okrajích mapy a jdou po hráči.</li>
+          <li>Po zásahu hráč ztrácí HP; při 0 HP končí hra.</li>
         </ul>
       </article>
 
       <article class="section">
         <h2>Funkční požadavky</h2>
         <ul>
-          <li>Umísťování a vylepšování obranných věží na mapě.</li>
-          <li>Různé typy nepřátel s odlišnou rychlostí, životy a odolností.</li>
-          <li>Systém vln s postupně narůstající obtížností.</li>
-          <li>Uživatelské rozhraní s přehledem stavu hráče a dostupných akcí.</li>
+          <li>Herní smyčka (update + render).</li>
+          <li>Menu se Start/Konec + game over obrazovka.</li>
+          <li>Skóre podle počtu zabitých zombie + doby přežití.</li>
+          <li>Ukládání výsledků do souboru i databáze.</li>
         </ul>
       </article>
 
       <article class="section">
         <h2>Technické požadavky</h2>
         <ul>
-          <li>Modulární struktura kódu pro snadné rozšiřování hry.</li>
-          <li>Oddělení logiky hry, vykreslování a vstupů uživatele.</li>
-          <li>Plynulý běh při cílové snímkové frekvenci alespoň 60 FPS.</li>
-          <li>Verzování v Git repozitáři a průběžná dokumentace změn.</li>
+          <li>Python + Pygame pro samotnou hru.</li>
+          <li>SQLite pro ukládání výsledků.</li>
+          <li>Webová prezentace + jednoduché webové DB rozhraní (registrace, žebříček).</li>
+          <li>Modulární kód, komentované funkce/třídy a verzování v Gitu.</li>
         </ul>
       </article>
     </section>

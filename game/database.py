@@ -1,3 +1,5 @@
+"""SQLite persistence layer used by game runtime and web integration."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -9,15 +11,18 @@ DB_PATH = BASE_DIR / "database" / "game.db"
 SCHEMA_PATH = BASE_DIR / "database" / "schema.sql"
 
 
-def get_connection(db_path: Path = DB_PATH) -> sqlite3.Connection:
+def get_connection(db_path: Path | None = None) -> sqlite3.Connection:
+    """Create SQLite connection with row dict-like access enabled."""
+    db_path = db_path or DB_PATH
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
 
-def init_db(db_path: Path = DB_PATH, schema_path: Path = SCHEMA_PATH) -> None:
-    with get_connection(db_path) as conn:
+def init_db(db_path: Path | None = None, schema_path: Path = SCHEMA_PATH) -> None:
+    """Initialize DB schema from file (or fallback schema)."""
+    with get_connection(db_path or DB_PATH) as conn:
         if schema_path.exists():
             conn.executescript(schema_path.read_text(encoding="utf-8"))
         else:
@@ -42,6 +47,7 @@ def init_db(db_path: Path = DB_PATH, schema_path: Path = SCHEMA_PATH) -> None:
 
 
 def save_match_result(player_name: str, score: int, duration_seconds: float) -> None:
+    """Insert player if needed and save one match row."""
     cleaned_name = player_name.strip() or "Hrac"
     match_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -61,6 +67,7 @@ def save_match_result(player_name: str, score: int, duration_seconds: float) -> 
 
 
 def get_leaderboard(limit: int = 5) -> list[dict[str, str | int | float]]:
+    """Return leaderboard rows sorted by score and date."""
     with get_connection() as conn:
         rows = conn.execute(
             """
@@ -74,3 +81,22 @@ def get_leaderboard(limit: int = 5) -> list[dict[str, str | int | float]]:
         ).fetchall()
 
     return [dict(row) for row in rows]
+
+
+def register_player(name: str, email: str | None = None) -> int:
+    """Register player account (or update email) and return player id."""
+    clean_name = name.strip()
+    if not clean_name:
+        raise ValueError("Jméno hráče nesmí být prázdné.")
+
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO players(name, email)
+            VALUES (?, ?)
+            ON CONFLICT(name) DO UPDATE SET email = COALESCE(excluded.email, players.email)
+            """,
+            (clean_name, email.strip() if email else None),
+        )
+        row = conn.execute("SELECT id FROM players WHERE name = ?", (clean_name,)).fetchone()
+        return int(row["id"])
