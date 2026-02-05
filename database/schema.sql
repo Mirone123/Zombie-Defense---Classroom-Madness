@@ -1,0 +1,33 @@
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE IF NOT EXISTS players (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    email TEXT UNIQUE,
+    registered_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS weapons (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    damage INTEGER NOT NULL DEFAULT 10,
+    rarity TEXT NOT NULL DEFAULT 'common'
+);
+
+CREATE TABLE IF NOT EXISTS matches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    player_id INTEGER NOT NULL,
+    score INTEGER NOT NULL DEFAULT 0,
+    duration_seconds REAL NOT NULL DEFAULT 0,
+    match_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS match_weapons (
+    match_id INTEGER NOT NULL,
+    weapon_id INTEGER NOT NULL,
+    kills_with_weapon INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (match_id, weapon_id),
+    FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
+    FOREIGN KEY (weapon_id) REFERENCES weapons(id) ON DELETE CASCADE
+);

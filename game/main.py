@@ -3,14 +3,17 @@ from enum import Enum, auto
 
 import pygame
 
+import database
+import storage
 from enemy import Zombie
 from player import Player
 from projectile import Projectile
-from ui import draw_game_over, draw_hud, draw_menu
+from ui import draw_game_over, draw_hud, draw_menu, draw_name_input
 
 
 class GameState(Enum):
     MENU = auto()
+    NAME_INPUT = auto()
     PLAYING = auto()
     GAME_OVER = auto()
 
@@ -25,8 +28,14 @@ class Game:
         self.clock = pygame.time.Clock()
         self.world_rect = self.screen.get_rect()
 
+        database.init_db()
+
         self.state = GameState.MENU
         self.menu_selection = 0
+
+        self.player_name = ""
+        self.name_input = ""
+        self.score_saved = False
 
         self.player = Player(self.width / 2, self.height / 2)
         self.zombies: list[Zombie] = []
@@ -40,6 +49,8 @@ class Game:
         self.shoot_cooldown = 0.18
         self.shoot_timer = 0.0
 
+        self.leaderboard_lines = self.get_leaderboard_lines()
+
     def reset_game(self):
         self.player.reset(self.width / 2, self.height / 2)
         self.zombies.clear()
@@ -49,6 +60,24 @@ class Game:
         self.spawn_timer = 0.0
         self.spawn_interval = 1.1
         self.shoot_timer = 0.0
+        self.score_saved = False
+
+    @staticmethod
+    def get_leaderboard_lines() -> list[str]:
+        db_rows = database.get_leaderboard(5)
+        if db_rows:
+            return [storage.format_score_line(row) for row in db_rows]
+        return storage.get_leaderboard_lines(5)
+
+    def persist_result(self):
+        if self.score_saved:
+            return
+
+        clean_name = self.player_name.strip() or "Hrac"
+        storage.save_score(clean_name, self.kills)
+        database.save_match_result(clean_name, self.kills, self.survival_time)
+        self.leaderboard_lines = self.get_leaderboard_lines()
+        self.score_saved = True
 
     def run(self):
         while True:
@@ -64,6 +93,8 @@ class Game:
 
             if self.state == GameState.MENU:
                 self.handle_menu_event(event)
+            elif self.state == GameState.NAME_INPUT:
+                self.handle_name_input_event(event)
             elif self.state == GameState.PLAYING:
                 self.handle_playing_event(event)
             elif self.state == GameState.GAME_OVER:
@@ -77,8 +108,8 @@ class Game:
                 self.menu_selection = (self.menu_selection + 1) % 2
             elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
                 if self.menu_selection == 0:
-                    self.reset_game()
-                    self.state = GameState.PLAYING
+                    self.name_input = self.player_name
+                    self.state = GameState.NAME_INPUT
                 else:
                     self.quit_game()
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -88,10 +119,25 @@ class Game:
             quit_rect = pygame.Rect(0, 0, 200, 40)
             quit_rect.center = (self.width // 2, self.height // 2 + 50)
             if start_rect.collidepoint(mouse_pos):
-                self.reset_game()
-                self.state = GameState.PLAYING
+                self.name_input = self.player_name
+                self.state = GameState.NAME_INPUT
             elif quit_rect.collidepoint(mouse_pos):
                 self.quit_game()
+
+    def handle_name_input_event(self, event: pygame.event.Event):
+        if event.type != pygame.KEYDOWN:
+            return
+
+        if event.key == pygame.K_RETURN:
+            self.player_name = self.name_input.strip() or "Hrac"
+            self.reset_game()
+            self.state = GameState.PLAYING
+        elif event.key == pygame.K_ESCAPE:
+            self.state = GameState.MENU
+        elif event.key == pygame.K_BACKSPACE:
+            self.name_input = self.name_input[:-1]
+        elif event.unicode and event.unicode.isprintable() and len(self.name_input) < 20:
+            self.name_input += event.unicode
 
     def handle_playing_event(self, event: pygame.event.Event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -100,8 +146,8 @@ class Game:
     def handle_game_over_event(self, event: pygame.event.Event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:
-                self.reset_game()
-                self.state = GameState.PLAYING
+                self.name_input = self.player_name
+                self.state = GameState.NAME_INPUT
             elif event.key == pygame.K_m:
                 self.state = GameState.MENU
             elif event.key == pygame.K_ESCAPE:
@@ -162,6 +208,7 @@ class Game:
         self.projectiles = [p for p in self.projectiles if not p.is_out_of_bounds(self.world_rect)]
 
         if not self.player.is_alive:
+            self.persist_result()
             self.state = GameState.GAME_OVER
 
     def handle_collisions(self):
@@ -196,8 +243,16 @@ class Game:
         self.screen.fill((25, 28, 34))
 
         if self.state == GameState.MENU:
-            draw_menu(self.screen, self.width, self.height, self.menu_selection)
-
+            draw_menu(
+                self.screen,
+                self.width,
+                self.height,
+                self.menu_selection,
+                self.player_name,
+                self.leaderboard_lines,
+            )
+        elif self.state == GameState.NAME_INPUT:
+            draw_name_input(self.screen, self.width, self.height, self.name_input)
         elif self.state == GameState.PLAYING:
             for projectile in self.projectiles:
                 projectile.draw(self.screen)
@@ -207,7 +262,6 @@ class Game:
             self.player.draw(self.screen)
             self.player.draw_barrel(self.screen, aim_direction)
             draw_hud(self.screen, self.kills, self.survival_time, self.player.health, self.player.max_health)
-
         elif self.state == GameState.GAME_OVER:
             for zombie in self.zombies:
                 zombie.draw(self.screen)
