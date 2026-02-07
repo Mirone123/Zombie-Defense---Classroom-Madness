@@ -1,3 +1,5 @@
+"""Main game loop and state manager for Zombie Defense."""
+
 import sys
 from enum import Enum, auto
 
@@ -12,6 +14,7 @@ from ui import draw_game_over, draw_hud, draw_menu, draw_name_input
 
 
 class GameState(Enum):
+    """High-level game screens/states."""
     MENU = auto()
     NAME_INPUT = auto()
     PLAYING = auto()
@@ -19,6 +22,7 @@ class GameState(Enum):
 
 
 class Game:
+    """Coordinates input, update loop, rendering and persistence."""
     def __init__(self):
         pygame.init()
         pygame.display.set_caption("Zombie Defense - Classroom Madness")
@@ -52,6 +56,7 @@ class Game:
         self.leaderboard_lines = self.get_leaderboard_lines()
 
     def reset_game(self):
+        """Reset runtime entities and counters for a fresh game."""
         self.player.reset(self.width / 2, self.height / 2)
         self.zombies.clear()
         self.projectiles.clear()
@@ -70,6 +75,7 @@ class Game:
         return storage.get_leaderboard_lines(5)
 
     def persist_result(self):
+        """Save final run to JSON fallback and SQLite leaderboard."""
         if self.score_saved:
             return
 
@@ -80,6 +86,7 @@ class Game:
         self.score_saved = True
 
     def run(self):
+        """Start the perpetual game loop."""
         while True:
             dt = self.clock.tick(60) / 1000
             self.handle_events()
@@ -87,6 +94,7 @@ class Game:
             self.render()
 
     def handle_events(self):
+        """Route pygame events by active game state."""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.quit_game()
@@ -154,6 +162,7 @@ class Game:
                 self.quit_game()
 
     def get_movement_input(self) -> pygame.Vector2:
+        """Collect movement vector from keyboard."""
         keys = pygame.key.get_pressed()
         direction = pygame.Vector2(0, 0)
 
@@ -169,16 +178,19 @@ class Game:
         return direction
 
     def should_fire(self) -> bool:
+        """Return True when shooting input is currently active."""
         keys = pygame.key.get_pressed()
         mouse_buttons = pygame.mouse.get_pressed(3)
         return mouse_buttons[0] or keys[pygame.K_SPACE]
 
     def fire_projectile(self):
+        """Spawn one projectile towards cursor position."""
         mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
         direction = mouse_pos - self.player.position
         self.projectiles.append(Projectile(self.player.position, direction))
 
     def update(self, dt: float):
+        """Advance world simulation while playing."""
         if self.state != GameState.PLAYING:
             return
 
@@ -212,6 +224,7 @@ class Game:
             self.state = GameState.GAME_OVER
 
     def handle_collisions(self):
+        """Resolve projectile-zombie and zombie-player collisions."""
         remaining_projectiles: list[Projectile] = []
         for projectile in self.projectiles:
             hit_zombie = None
@@ -240,6 +253,7 @@ class Game:
                     zombie.position += push_dir * 14
 
     def render(self):
+        """Draw current state to display."""
         self.screen.fill((25, 28, 34))
 
         if self.state == GameState.MENU:
@@ -272,6 +286,7 @@ class Game:
 
     @staticmethod
     def quit_game():
+        """Quit pygame and terminate process."""
         pygame.quit()
         sys.exit()
 

@@ -1,3 +1,5 @@
+"""File-based fallback storage for score records."""
+
 from __future__ import annotations
 
 import json
@@ -10,6 +12,7 @@ SCORES_FILE = BASE_DIR / "game" / "scores.json"
 
 
 def _read_raw_scores(file_path: Path = SCORES_FILE) -> list[dict[str, Any]]:
+    """Read raw score list from JSON; return empty list when missing/corrupt."""
     if not file_path.exists():
         return []
 
@@ -24,11 +27,13 @@ def _read_raw_scores(file_path: Path = SCORES_FILE) -> list[dict[str, Any]]:
 
 
 def load_scores(file_path: Path = SCORES_FILE) -> list[dict[str, Any]]:
+    """Load and sort scores descending by score value."""
     scores = _read_raw_scores(file_path)
     return sorted(scores, key=lambda row: int(row.get("skore", 0)), reverse=True)
 
 
 def save_score(jmeno: str, skore: int, datum: str | None = None, file_path: Path = SCORES_FILE) -> dict[str, Any]:
+    """Append one score record and persist JSON file."""
     datum = datum or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     record = {"jmeno": jmeno.strip() or "Hrac", "skore": int(skore), "datum": datum}
 
@@ -41,8 +46,10 @@ def save_score(jmeno: str, skore: int, datum: str | None = None, file_path: Path
 
 
 def format_score_line(score_row: dict[str, Any]) -> str:
+    """Format record as 'name | score | date'."""
     return f"{score_row.get('jmeno', 'Hrac')} | {score_row.get('skore', 0)} | {score_row.get('datum', '-') }"
 
 
 def get_leaderboard_lines(limit: int = 5, file_path: Path = SCORES_FILE) -> list[str]:
+    """Return formatted leaderboard lines."""
     return [format_score_line(row) for row in load_scores(file_path)[:limit]]
